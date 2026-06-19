@@ -29,7 +29,7 @@ Thumbs.db
 
 # Dataset files - exclude raw data by default
 # Uncomment if you want to commit a sample
-[PUB] India_runs_data_and_ai_challenge/
+\[PUB\] India_runs_data_and_ai_challenge/
 __MACOSX/
 
 # Generated files
