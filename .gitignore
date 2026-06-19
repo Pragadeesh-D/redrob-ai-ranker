@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.bak
+
+# Dataset files - exclude raw data by default
+# Uncomment if you want to commit a sample
+[PUB] India_runs_data_and_ai_challenge/
+__MACOSX/
+
+# Generated files
+submission.csv
+sample_submission.csv
+
+# Extracted text files from docx
+job_description.txt
+submission_spec.txt
+redrob_signals_tables.txt
+redrob_signals_doc.txt
+
+# ML artifacts
+*.pkl
+*.joblib
+*.h5
+*.pt
+*.pth
+*.onnx
+*.bin
+embeddings/
+indexes/
+models/
+
+# Logs and reports
+*.log
