@@ -1,11 +1,41 @@
-# Core
-python-docx>=1.2.0
+# ============================================================================
+# Redrob AI Ranker — Pinned Dependencies
+# Last updated: June 23, 2026
+#
+# Python version: >=3.10,<3.14 (PyTorch compatibility)
+# Platform: CPU-only (no GPU/CUDA)
+#
+# Pinning policy:
+# - Direct dependencies: exact version (==)
+# - Critical transitive deps listed for visibility (pull in automatically)
+# ============================================================================
+
+# --- Direct Dependencies ---
+
+# Document parsing (candidate profiles in docx format)
+python-docx==1.2.0
 
 # Data processing
-numpy>=1.24.0
+numpy==2.4.4
 
-# ML
-sentence-transformers>=2.2.0
+# ML — embedding model (all-MiniLM-L6-v2, CPU-only)
+# Pulls in torch, transformers, huggingface_hub, tokenizers, scikit-learn, scipy, tqdm, safetensors
+sentence-transformers==5.6.0
 
-# Development
-pytest>=7.0.0
+# --- Development ---
+pytest==9.0.3
+
+# ============================================================================
+# Critical transitive dependencies (pinned for full reproducibility)
+# These are installed automatically by sentence-transformers.
+# Pin them explicitly here if you need guaranteed reproducibility:
+#
+# torch==2.12.1+cpu
+# transformers==5.12.1
+# huggingface_hub==1.20.1
+# tokenizers==0.22.2
+# scikit-learn==1.8.0
+# scipy==1.17.1
+# tqdm==4.68.2
+# safetensors==0.8.0
+# ============================================================================

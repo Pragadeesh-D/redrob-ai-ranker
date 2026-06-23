@@ -28,17 +28,19 @@ Given 100,000 candidate profiles in JSONL format, produce a ranked CSV of the **
 │   ├── parser/                  # Candidate parser with schema validation (Phase 4)
 │   ├── features/                # Feature extraction framework (Phase 4)
 │   └── utils/                   # Utility functions (Phase 4)
-├── tests/                       # Test suite (Phase 4, 75 tests)
+├── tests/                       # Test suite (103 tests: Phase 4 + Phase 5)
 │   ├── conftest.py
 │   ├── test_loader.py
 │   ├── test_parser.py
-│   └── test_features.py
+│   ├── test_features.py
+│   └── test_features_semantic.py
 ├── docs/                        # Phase documentation
 │   ├── ANALYSIS_REPORT.md       # Phase 1 — Full competition analysis
 │   ├── FEATURE_CATALOG.md       # Phase 2 — 35-feature blueprint
 │   ├── ARCHITECTURE.md          # Phase 3 — 9-module pipeline design
-│   └── PHASE_*_*.md             # Phase reports (Phases 1-4)
-└── [PUB] India_runs_data_and_ai_challenge/  # Competition dataset (gitignored)
+│   └── PHASE_*_*.md             # Phase reports (Phases 1-5)
+├── pyproject.toml               # Project metadata + Python version requirement
+└── [PUB] India_runs_data_and_ai_challenge/  # Competition dataset (sample files tracked)
 ```
 
 ## Dataset
@@ -108,7 +110,7 @@ python -m pytest tests/ -v
 | 2 | Feature Catalog — 35 features across 9 categories | ✅ Complete |
 | 3 | Architecture Design — 9-module pipeline | ✅ Complete |
 | 4 | Core Engine — Data Loader, Parser, Feature Framework | ✅ Complete |
-| 5 | Scoring Engine Implementation | ⬜ Pending |
+| 5 | Semantic Engine — Embedding-based JD-candidate similarity scoring | ✅ Complete |
 | 6 | Honeypot Detection | ⬜ Pending |
 | 7 | Ranking Pipeline & Reasoning | ⬜ Pending |
 | 8 | Optimization & Performance Tuning | ⬜ Pending |
@@ -117,20 +119,108 @@ python -m pytest tests/ -v
 
 ---
 
+## Semantic Engine (Phase 5)
+
+The Semantic Engine computes embedding-based similarity between candidate profiles and the target job description using `sentence-transformers/all-MiniLM-L6-v2`.
+
+### Model
+
+| Property | Value |
+|----------|-------|
+| **Model** | `sentence-transformers/all-MiniLM-L6-v2` |
+| **Dimensions** | 384 |
+| **Size** | ~88 MB (downloaded on first use, cached locally) |
+| **Execution** | CPU-only (`device="cpu"`) |
+| **First-run** | Requires network to download from HuggingFace Hub |
+| **Cache location** | `~/.cache/huggingface/hub/` |
+
+### Features Produced
+
+| Feature | Source | Description |
+|---------|--------|-------------|
+| `jd_similarity_score` | Headline + Summary + Current Title | Overall profile-JD semantic similarity |
+| `summary_similarity_score` | Profile Summary | Summary vs JD similarity |
+| `headline_similarity_score` | Professional Headline | Headline vs JD similarity |
+| `career_similarity_score` | Career History Descriptions | Career evidence vs JD similarity |
+
+### Pre-computation Workflow
+
+```python
+from src.features.semantic import SemanticEngine
+
+# 1. Initialize (downloads model on first run, caches JD embedding)
+engine = SemanticEngine()
+
+# 2. Pre-compute embeddings for all candidates (build phase — not timed)
+engine.precompute(candidates)
+
+# 3. Extract features per candidate (O(1) lookup from cache)
+features = engine.extract(candidate)
+# Returns: {"jd_similarity_score": 0.85, "summary_similarity_score": 0.72, ...}
+```
+
+### Disk Cache for Ranking Phase
+
+Pre-computed embeddings can be saved to disk and loaded in < 1 second during the timed ranking phase:
+
+```python
+# Build phase: encode all candidates and save to disk
+engine.precompute(candidates)
+engine.save_embeddings("./embeddings/")
+
+# Ranking phase (timed): load cached embeddings — no model needed
+from src.features.semantic import SemanticEngine
+engine = SemanticEngine()
+engine.load_embeddings("./embeddings/")
+features = engine.extract(candidate)   # < 1 ms per candidate
+```
+
+### Performance
+
+| Operation | 10K Candidates | 100K Candidates (Projected) |
+|-----------|---------------|-----------------------------|
+| Model load | ~8 s | ~8 s |
+| Pre-compute (4 fields) | ~143 s | ~23.8 min (build phase) |
+| Disk cache load | < 1 s | < 1 s |
+| Extract (cached) | ~1 ms/candidate | ~1 ms/candidate |
+
+### RAM Usage
+
+| Component | Size |
+|-----------|------|
+| Model (all-MiniLM-L6-v2) | ~80 MB (PyTorch C++ heap) |
+| Embeddings (100K × 4 fields) | ~5 MB |
+| Python overhead | ~5 MB |
+| **Total** | **~90 MB** |
+
+### Python Version Requirement
+
+| Requirement | Value |
+|-------------|-------|
+| **Minimum** | Python 3.10 |
+| **Maximum** | Python 3.13 (PyTorch compatibility) |
+| **Specified in** | `pyproject.toml` (`requires-python = "\>=3.10,\<3.14"`) |
+
+---
+
 ## Current Status
 
 | Metric | Value |
 |--------|-------|
-| **Phase completed** | Phase 4 — Core Engine |
-| **Latest commit** | `0c12969` |
-| **Unit tests** | 75/75 passing |
-| **Code coverage** | 87% overall (96% target modules) |
+| **Phase completed** | Phase 5 — Semantic Engine |
+| **Latest commit** | `1e13b4a` |
+| **Branch** | `phase5-scoring-engine` |
+| **Tags** | `phase4-stable`, `phase5-stable` |
+| **Unit tests** | 103/103 passing |
+| **Code coverage** | 89% overall (94% semantic.py) |
 | **Data loading** | Streaming JSONL (line-by-line, no full dataset in memory) |
-| **Throughput** | ~15,000+ candidates/second |
-| **Peak memory** | ~3–5 MB (streaming mode) |
+| **Throughput (parse)** | ~15,000+ candidates/second |
+| **Peak memory (parse)** | ~3–5 MB (streaming mode) |
+| **Peak memory (semantic engine)** | ~90 MB (model + embeddings) |
 | **Per-candidate parse time** | ~70 µs |
-| **100K candidate projection** | ~7 seconds |
-| **5-minute budget margin** | ~80%+ |
+| **Semantic precompute (100K)** | ~23.8 min (build phase, not timed) |
+| **Semantic ranking stage** | < 1 s (with disk cache) |
+| **Python version** | >=3.10, <3.14 |
 
 ---
 
