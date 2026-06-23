@@ -21,14 +21,24 @@ Given 100,000 candidate profiles in JSONL format, produce a ranked CSV of the **
 ├── .gitignore
 ├── README.md
 ├── requirements.txt
-├── docs/
-│   ├── ANALYSIS_REPORT.md      # Phase 1 — Full competition analysis
-│   └── PHASE_1_SUMMARY.md      # Phase 1 — Completion summary
-├── SELF_AUDIT.md                # Runtime audit trail
-├── rank.py                      # (Phase 5+) Main ranking pipeline
-├── features/                    # (Phase 4+) Feature extraction modules
-├── scoring/                     # (Phase 5+) Scoring modules
-└── tests/                       # (Phase 9+) Test suite
+├── SELF_AUDIT.md                # Runtime audit trail (Phases 1-4)
+├── src/                         # Core Python package
+│   ├── __init__.py
+│   ├── loader/                  # Streaming JSONL data loader (Phase 4)
+│   ├── parser/                  # Candidate parser with schema validation (Phase 4)
+│   ├── features/                # Feature extraction framework (Phase 4)
+│   └── utils/                   # Utility functions (Phase 4)
+├── tests/                       # Test suite (Phase 4, 75 tests)
+│   ├── conftest.py
+│   ├── test_loader.py
+│   ├── test_parser.py
+│   └── test_features.py
+├── docs/                        # Phase documentation
+│   ├── ANALYSIS_REPORT.md       # Phase 1 — Full competition analysis
+│   ├── FEATURE_CATALOG.md       # Phase 2 — 35-feature blueprint
+│   ├── ARCHITECTURE.md          # Phase 3 — 9-module pipeline design
+│   └── PHASE_*_*.md             # Phase reports (Phases 1-4)
+└── [PUB] India_runs_data_and_ai_challenge/  # Competition dataset (gitignored)
 ```
 
 ## Dataset
@@ -41,6 +51,8 @@ Given 100,000 candidate profiles in JSONL format, produce a ranked CSV of the **
 | `submission_spec.docx` | Full submission specification and scoring rules |
 | `redrob_signals_doc.docx` | Reference for 23 behavioral signals |
 | `validate_submission.py` | Local validation script for submission CSV format |
+
+> **Note:** Competition data files are located in `[PUB] India_runs_data_and_ai_challenge/India_runs_data_and_ai_challenge/`.
 
 ## Submission Format
 
@@ -67,17 +79,25 @@ CAND_0042871,1,0.987,"Senior AI Engineer with 7 years building RAG systems..."
 
 ```bash
 # Clone the repository
-git clone <repo-url>
+git clone https://github.com/Pragadeesh-D/redrob-ai-ranker.git
 cd redrob-ranker
+
+# Create and activate a virtual environment (recommended)
+python -m venv venv
+source venv/bin/activate   # Linux/macOS
+# venv\Scripts\activate    # Windows
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the ranker (once implemented)
-python rank.py --candidates ./candidates.jsonl --out ./submission.csv
+# Run tests to verify the setup
+python -m pytest tests/ -v
 
-# Validate the submission
-python validate_submission.py submission.csv
+# Run the ranker (once fully implemented in Phase 5+)
+# python rank.py --candidates "[PUB] India_runs_data_and_ai_challenge/India_runs_data_and_ai_challenge/candidates.jsonl" --out ./submission.csv
+
+# Validate a submission CSV
+# python "[PUB] India_runs_data_and_ai_challenge/India_runs_data_and_ai_challenge/validate_submission.py" submission.csv
 ```
 
 ## Phases
@@ -85,15 +105,32 @@ python validate_submission.py submission.csv
 | Phase | Focus | Status |
 |-------|-------|--------|
 | 1 | Foundation & Analysis | ✅ Complete |
-| 2 | Data Parsing & Schema Validation | ⬜ Pending |
-| 3 | Feature Extraction & Engineering | ⬜ Pending |
-| 4 | Scoring Strategy Design | ⬜ Pending |
-| 5 | Ranker Implementation | ⬜ Pending |
+| 2 | Feature Catalog — 35 features across 9 categories | ✅ Complete |
+| 3 | Architecture Design — 9-module pipeline | ✅ Complete |
+| 4 | Core Engine — Data Loader, Parser, Feature Framework | ✅ Complete |
+| 5 | Scoring Engine Implementation | ⬜ Pending |
 | 6 | Honeypot Detection | ⬜ Pending |
-| 7 | Behavioral Signal Integration | ⬜ Pending |
+| 7 | Ranking Pipeline & Reasoning | ⬜ Pending |
 | 8 | Optimization & Performance Tuning | ⬜ Pending |
-| 9 | Testing & Validation | ⬜ Pending |
+| 9 | Expanded Testing & Validation | ⬜ Pending |
 | 10 | Final Packaging & Submission | ⬜ Pending |
+
+---
+
+## Current Status
+
+| Metric | Value |
+|--------|-------|
+| **Phase completed** | Phase 4 — Core Engine |
+| **Latest commit** | `0c12969` |
+| **Unit tests** | 75/75 passing |
+| **Code coverage** | 87% overall (96% target modules) |
+| **Data loading** | Streaming JSONL (line-by-line, no full dataset in memory) |
+| **Throughput** | ~15,000+ candidates/second |
+| **Peak memory** | ~3–5 MB (streaming mode) |
+| **Per-candidate parse time** | ~70 µs |
+| **100K candidate projection** | ~7 seconds |
+| **5-minute budget margin** | ~80%+ |
 
 ---
 

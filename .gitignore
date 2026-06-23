@@ -54,5 +54,10 @@ embeddings/
 indexes/
 models/
 
+# Generated coverage artifacts
+.coverage
+.coverage.*
+htmlcov/
+
 # Logs and reports
 *.log
