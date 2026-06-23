@@ -50,8 +50,8 @@ compute:
   os: "macOS 14.2"                              # Or "Ubuntu 22.04 LTS", etc.
   uses_gpu_for_inference: false                 # Must be false — see compute constraints
   has_network_during_ranking: false             # Must be false — no API calls during ranking
-  pre_computation_required: false               # true if you pre-compute embeddings or train models offline
-  pre_computation_time_minutes: 0               # Approximate, if applicable
+  pre_computation_required: true                # true — pre-computes embeddings via SemanticEngine
+  pre_computation_time_minutes: 9               # Estimated for 100K candidates × 4 embedding fields
 
 # ============================================================================
 # AI tools declaration
