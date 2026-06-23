@@ -1,0 +1,58 @@
+# Redrob Hackathon — Submission Metadata
+# Phase 10 — Final Submission Package
+
+team_name: "redrob-ai-ranker"
+
+primary_contact:
+  name: "Team Lead"
+  email: "team@example.com"
+  phone: "+91-XXXXXXXXXX"
+
+team_members:
+  - name: "Developer"
+    email: "dev@example.com"
+    role: "ML Engineer"
+
+github_repo: "https://github.com/Pragadeesh-D/redrob-ai-ranker"
+
+sandbox_link: "https://huggingface.co/spaces/YOUR_USERNAME/redrob-ranker"
+# TODO: Deploy Streamlit app to HuggingFace Spaces
+
+reproduce_command: "python rank.py --candidates ./candidates.jsonl --out ./submission.csv"
+
+compute:
+  platform: "Local Windows (CPU only)"
+  cpu_cores: 4
+  ram_gb: 8
+  python_version: "3.14.3"
+  os: "Windows 11"
+  uses_gpu_for_inference: false
+  has_network_during_ranking: false
+  pre_computation_required: true
+  pre_computation_time_minutes: 9
+
+ai_tools_used:
+  - "Claude"
+  - "Codebuff"
+
+ai_usage_summary: |
+  Used Claude (via Codebuff CLI) for architecture design, implementation,
+  code review, testing, and documentation across all 10 phases.
+  No candidate data was fed to any AI tool.
+
+methodology_summary: |
+  Five-component rule-based ranker with explicit reasoning capture.
+  Career Intelligence (35%) identifies product/startup/ML/ranking experience.
+  Semantic Engine (20%) computes JD-candidate similarity via sentence embeddings.
+  Behavioral signals (35% combined) capture availability, trust, demand,
+  and platform engagement. Honeypot Detection applies up to 50% penalty
+  for impossible timelines, skill contradictions, and seniority mismatches.
+  Runtime is under 5 minutes for 100K candidates on CPU with no network
+  during the ranking phase (embeddings pre-computed in build phase).
+
+declarations:
+  read_submission_spec: true
+  code_is_original_work: true
+  no_collusion: true
+  honeypot_check_done: true
+  reproduction_tested: true

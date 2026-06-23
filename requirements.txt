@@ -25,6 +25,11 @@ sentence-transformers==5.6.0
 # --- Development ---
 pytest==9.0.3
 
+# --- Streamlit Demo ---
+streamlit>=1.35.0
+plotly>=5.20.0
+pandas>=2.2.0
+
 # ============================================================================
 # Critical transitive dependencies (pinned for full reproducibility)
 # These are installed automatically by sentence-transformers.

@@ -18,29 +18,42 @@ Given 100,000 candidate profiles in JSONL format, produce a ranked CSV of the **
 ## Repository Structure
 
 ```
+├── rank.py                        # CLI entry point — reproducible ranking pipeline
+├── app.py                         # Streamlit demo app
+├── submission.csv                 # Generated submission (top 100 ranked candidates)
+├── submission_metadata.yaml       # Competition metadata
 ├── .gitignore
 ├── README.md
 ├── requirements.txt
-├── SELF_AUDIT.md                # Runtime audit trail (Phases 1-4)
-├── src/                         # Core Python package
+├── src/                           # Core Python package
 │   ├── __init__.py
-│   ├── loader/                  # Streaming JSONL data loader (Phase 4)
-│   ├── parser/                  # Candidate parser with schema validation (Phase 4)
-│   ├── features/                # Feature extraction framework (Phase 4)
-│   └── utils/                   # Utility functions (Phase 4)
-├── tests/                       # Test suite (103 tests: Phase 4 + Phase 5)
+│   ├── loader/                    # Streaming JSONL data loader (Phase 4)
+│   ├── parser/                    # Candidate parser with schema validation (Phase 4)
+│   ├── features/                  # Feature extraction framework + 5 engines
+│   │   ├── base.py
+│   │   ├── framework.py
+│   │   ├── semantic.py            # Phase 5 — Semantic Engine
+│   │   ├── career_intelligence.py # Phase 6 — Career Intelligence
+│   │   ├── behavioral_intelligence.py # Phase 7 — Behavioral Intelligence
+│   │   └── honeypot_detection.py  # Phase 8 — Honeypot Detection
+│   └── ranker/                    # Final ranking pipeline (Phase 9)
+│       └── ranker.py
+├── tests/                         # Test suite (276 tests)
 │   ├── conftest.py
 │   ├── test_loader.py
 │   ├── test_parser.py
 │   ├── test_features.py
-│   └── test_features_semantic.py
-├── docs/                        # Phase documentation
-│   ├── ANALYSIS_REPORT.md       # Phase 1 — Full competition analysis
-│   ├── FEATURE_CATALOG.md       # Phase 2 — 35-feature blueprint
-│   ├── ARCHITECTURE.md          # Phase 3 — 9-module pipeline design
-│   └── PHASE_*_*.md             # Phase reports (Phases 1-5)
-├── pyproject.toml               # Project metadata + Python version requirement
-└── [PUB] India_runs_data_and_ai_challenge/  # Competition dataset (sample files tracked)
+│   ├── test_features_semantic.py
+│   ├── test_features_career_intelligence.py
+│   ├── test_features_behavioral_intelligence.py
+│   ├── test_features_honeypot_detection.py
+│   └── test_ranker.py
+├── docs/                          # Phase documentation
+│   ├── ARCHITECTURE.md
+│   ├── FEATURE_CATALOG.md
+│   ├── PHASE_*.md
+│   └── ...
+└── [PUB] India_runs_data_and_ai_challenge/  # Competition dataset
 ```
 
 ## Dataset
@@ -95,11 +108,57 @@ pip install -r requirements.txt
 # Run tests to verify the setup
 python -m pytest tests/ -v
 
-# Run the ranker (once fully implemented in Phase 5+)
-# python rank.py --candidates "[PUB] India_runs_data_and_ai_challenge/India_runs_data_and_ai_challenge/candidates.jsonl" --out ./submission.csv
+# Run the ranking pipeline
+python rank.py --candidates "[PUB] India_runs_data_and_ai_challenge/India_runs_data_and_ai_challenge/candidates.jsonl" --out ./submission.csv
 
 # Validate a submission CSV
-# python "[PUB] India_runs_data_and_ai_challenge/India_runs_data_and_ai_challenge/validate_submission.py" submission.csv
+python "[PUB] India_runs_data_and_ai_challenge/India_runs_data_and_ai_challenge/validate_submission.py" submission.csv
+
+# Launch the Streamlit demo
+streamlit run app.py
+```
+
+## Ranking Pipeline
+
+The ranking pipeline (`rank.py`) runs 5 feature engines:
+
+| Phase | Engine | Features | Network? |
+|-------|--------|----------|----------|
+| 5 | Semantic Engine | 4 (JD similarity scores) | Yes (first run to download model) |
+| 6 | Career Intelligence | 20 (product, startup, ML, retrieval exp.) | No |
+| 7 | Behavioral Intelligence | 11 (availability, trust, demand, engagement) | No |
+| 8 | Honeypot Detection | 10 (timeline, skill, progression checks) | No |
+| 9 | Score Fusion + Ranking | Composite score + reasoning | No |
+
+### Pipeline Flow
+
+```
+candidates.jsonl → DataLoader → CandidateParser
+                                    ↓
+                           FeatureRegistry
+                        ┌───────┼───────┬───────┐
+                        ↓       ↓       ↓       ↓
+                   Career   Behav.  Honeypot  Semantic
+                   Intel.   Intel.  Detect.  Engine
+                        └───────┼───────┴───────┘
+                                ↓
+                          ScoreFusion
+                                ↓
+                      FinalRanker → submission.csv
+```
+
+### Embedding Cache
+
+The Semantic Engine downloads `all-MiniLM-L6-v2` on first run (~88 MB). Pre-computed embeddings can be cached to disk for subsequent runs without network:
+
+```python
+# Build phase (network required)
+engine.precompute(candidates)
+engine.save_embeddings("./embeddings/")
+
+# Ranking phase (no network)
+engine.load_embeddings("./embeddings/")
+features = engine.extract(candidate)   # < 1 ms per candidate
 ```
 
 ## Phases
@@ -111,117 +170,40 @@ python -m pytest tests/ -v
 | 3 | Architecture Design — 9-module pipeline | ✅ Complete |
 | 4 | Core Engine — Data Loader, Parser, Feature Framework | ✅ Complete |
 | 5 | Semantic Engine — Embedding-based JD-candidate similarity scoring | ✅ Complete |
-| 6 | Honeypot Detection | ⬜ Pending |
-| 7 | Ranking Pipeline & Reasoning | ⬜ Pending |
-| 8 | Optimization & Performance Tuning | ⬜ Pending |
-| 9 | Expanded Testing & Validation | ⬜ Pending |
-| 10 | Final Packaging & Submission | ⬜ Pending |
+| 6 | Career Intelligence — Product/ML/Startup/Ranking experience signals | ✅ Complete |
+| 7 | Behavioral Intelligence — Availability, Trust, Demand, Engagement | ✅ Complete |
+| 8 | Honeypot Detection — Timeline/skill/seniority consistency checks | ✅ Complete |
+| 9 | Final Ranker — Weighted score fusion, reasoning, submission generation | ✅ Complete |
+| 10 | Submission Package — CLI, Streamlit demo, validation, packaging | ✅ Complete |
 
----
-
-## Semantic Engine (Phase 5)
-
-The Semantic Engine computes embedding-based similarity between candidate profiles and the target job description using `sentence-transformers/all-MiniLM-L6-v2`.
-
-### Model
-
-| Property | Value |
-|----------|-------|
-| **Model** | `sentence-transformers/all-MiniLM-L6-v2` |
-| **Dimensions** | 384 |
-| **Size** | ~88 MB (downloaded on first use, cached locally) |
-| **Execution** | CPU-only (`device="cpu"`) |
-| **First-run** | Requires network to download from HuggingFace Hub |
-| **Cache location** | `~/.cache/huggingface/hub/` |
-
-### Features Produced
-
-| Feature | Source | Description |
-|---------|--------|-------------|
-| `jd_similarity_score` | Headline + Summary + Current Title | Overall profile-JD semantic similarity |
-| `summary_similarity_score` | Profile Summary | Summary vs JD similarity |
-| `headline_similarity_score` | Professional Headline | Headline vs JD similarity |
-| `career_similarity_score` | Career History Descriptions | Career evidence vs JD similarity |
-
-### Pre-computation Workflow
-
-```python
-from src.features.semantic import SemanticEngine
-
-# 1. Initialize (downloads model on first run, caches JD embedding)
-engine = SemanticEngine()
-
-# 2. Pre-compute embeddings for all candidates (build phase — not timed)
-engine.precompute(candidates)
-
-# 3. Extract features per candidate (O(1) lookup from cache)
-features = engine.extract(candidate)
-# Returns: {"jd_similarity_score": 0.85, "summary_similarity_score": 0.72, ...}
-```
-
-### Disk Cache for Ranking Phase
-
-Pre-computed embeddings can be saved to disk and loaded in < 1 second during the timed ranking phase:
-
-```python
-# Build phase: encode all candidates and save to disk
-engine.precompute(candidates)
-engine.save_embeddings("./embeddings/")
-
-# Ranking phase (timed): load cached embeddings — no model needed
-from src.features.semantic import SemanticEngine
-engine = SemanticEngine()
-engine.load_embeddings("./embeddings/")
-features = engine.extract(candidate)   # < 1 ms per candidate
-```
-
-### Performance
-
-| Operation | 10K Candidates | 100K Candidates (Projected) |
-|-----------|---------------|-----------------------------|
-| Model load | ~8 s | ~8 s |
-| Pre-compute (4 fields) | ~143 s | ~23.8 min (build phase) |
-| Disk cache load | < 1 s | < 1 s |
-| Extract (cached) | ~1 ms/candidate | ~1 ms/candidate |
-
-### RAM Usage
-
-| Component | Size |
-|-----------|------|
-| Model (all-MiniLM-L6-v2) | ~80 MB (PyTorch C++ heap) |
-| Embeddings (100K × 4 fields) | ~5 MB |
-| Python overhead | ~5 MB |
-| **Total** | **~90 MB** |
-
-### Python Version Requirement
-
-| Requirement | Value |
-|-------------|-------|
-| **Minimum** | Python 3.10 |
-| **Maximum** | Python 3.13 (PyTorch compatibility) |
-| **Specified in** | `pyproject.toml` (`requires-python = "\>=3.10,\<3.14"`) |
-
----
-
-## Current Status
+## Performance
 
 | Metric | Value |
 |--------|-------|
-| **Phase completed** | Phase 5 — Semantic Engine |
-| **Latest commit** | `1e13b4a` |
-| **Branch** | `phase5-scoring-engine` |
-| **Tags** | `phase4-stable`, `phase5-stable` |
-| **Unit tests** | 103/103 passing |
-| **Code coverage** | 89% overall (94% semantic.py) |
-| **Data loading** | Streaming JSONL (line-by-line, no full dataset in memory) |
-| **Throughput (parse)** | ~15,000+ candidates/second |
-| **Peak memory (parse)** | ~3–5 MB (streaming mode) |
-| **Peak memory (semantic engine)** | ~90 MB (model + embeddings) |
-| **Per-candidate parse time** | ~70 µs |
-| **Semantic precompute (100K)** | ~23.8 min (build phase, not timed) |
-| **Semantic ranking stage** | < 1 s (with disk cache) |
+| **Total tests** | 276/276 passing |
+| **Phase 5-9 regression** | Zero — all previous phases unchanged |
+| **Ranking throughput** | > 500 candidates/sec (3 engines, no semantic) |
+| **Peak RAM (no semantic)** | < 5 MB |
+| **Peak RAM (with semantic)** | ~90 MB (model + embeddings) |
 | **Python version** | >=3.10, <3.14 |
+| **CPU-only** | ✅ No GPU dependency |
+| **Deterministic** | ✅ Same input → same output |
+
+## Streamlit Demo
+
+A visual demo is available at `app.py` showing:
+
+- Candidate ranking table with scores
+- Per-candidate radar chart (6 dimensions)
+- Cross-candidate comparison bar chart
+- Component score heatmap
+- Downloadable submission.csv
+
+```bash
+streamlit run app.py
+```
 
 ---
 
 *Built for the Redrob Intelligent Candidate Discovery & Ranking Challenge*
+*10-phase architecture, CPU-only, fully reproducible*
